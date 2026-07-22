@@ -32,6 +32,25 @@
   });
 })();
 </script>
+<script>
+(function(){
+  var wlValidVisitDone=false;
+  var wlEarlyExitSent=false;
+  var wlPageLoadTs=Date.now();
+  var wlValidVisitTimer=setTimeout(function(){
+    wlValidVisitDone=true;
+    if(window.posthog)posthog.capture('valid_visit');
+  },5000);
+  function wlHandleEarlyExit(){
+    if(wlValidVisitDone||wlEarlyExitSent)return;
+    wlEarlyExitSent=true;
+    var durationSeconds=Math.round((Date.now()-wlPageLoadTs)/1000);
+    if(window.posthog)posthog.capture('early_exit',{duration_seconds:durationSeconds,visitor_type:'accidental'});
+  }
+  window.addEventListener('pagehide',wlHandleEarlyExit);
+  document.addEventListener('visibilitychange',function(){if(document.visibilityState==='hidden')wlHandleEarlyExit();});
+})();
+</script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>SHLUKU</title>
@@ -258,7 +277,7 @@ h2 em { font-style:normal; font-weight:300; }
 .more-details-btn:active { transform:scale(.97); }
 .cta-btn:hover { opacity:.88; }
 .cta-btn:active { transform:scale(.97); }
-.cta-note { font-size:12px; color:rgba(255,255,255,.22); margin-top:18px; }
+.cta-note { font-size:13px; font-weight:500; color:rgba(255,255,255,.65); margin-top:18px; }
 
 footer { padding:28px; display:flex; justify-content:space-between; border-top:.5px solid rgba(0,0,0,.07); background:var(--bg); }
 .foot-logo { font-family:var(--serif); font-size:14px; letter-spacing:.04em; color:var(--ink); }
@@ -414,6 +433,16 @@ body::after { content:''; position:fixed; inset:0; z-index:9999; pointer-events:
   z-index: 1;
   pointer-events: none;
 }
+#heroLoading {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 56px;
+  height: 56px;
+  z-index: 2;
+  pointer-events: none;
+}
 
 /* ── SOLUTION CINEMATIC ── */
 .solution-scene {
@@ -550,6 +579,7 @@ body::after { content:''; position:fixed; inset:0; z-index:9999; pointer-events:
     preload="auto"
   ></video>
   <canvas id="heroVideoFreeze" aria-hidden="true"></canvas>
+  <img id="heroLoading" src="loading.gif" alt="" aria-hidden="true" />
   <div class="hero-text">
     <h1 class="hero-line-1">Keep your bottle.</h1>
     <h1 class="hero-line-2">Make it smart.</h1>
@@ -729,7 +759,7 @@ body::after { content:''; position:fixed; inset:0; z-index:9999; pointer-events:
   <p class="eyebrow" data-reveal style="color:rgba(255,255,255,.3)">Coming Soon</p>
   <h2 data-reveal class="d1">Be the first<br><strong>to know.</strong></h2>
   <p class="body" data-reveal class="d2">SHLUKU is still in development and is expected to cost about the same as a pack of cigarettes. Join the early list and get an exclusive launch discount when it's ready.</p>
-  <button class="cta-btn" data-reveal class="d3" onclick="openWaitlistPopup()">Join the Waitlist</button>
+  <button class="cta-btn" data-reveal class="d3" onclick="openWaitlistPopup()">Save my spot</button>
   <p class="cta-note" data-reveal>No spam. One email when we launch.</p>
 </div>
 
@@ -745,6 +775,18 @@ setTimeout(() => { document.querySelectorAll('.hero [data-reveal]').forEach(el =
 // ── HERO VIDEO - play once, freeze on last frame, then reveal titles ──
 const heroVideo = document.getElementById('heroVideo');
 if (heroVideo) {
+  var heroLoadingGif = document.getElementById('heroLoading');
+  function hideHeroLoading() {
+    if (heroLoadingGif) heroLoadingGif.style.display = 'none';
+  }
+  if (heroLoadingGif) {
+    if (!heroVideo.paused && heroVideo.readyState >= 3) {
+      hideHeroLoading();
+    } else {
+      heroVideo.addEventListener('playing', hideHeroLoading);
+      heroVideo.addEventListener('error', hideHeroLoading);
+    }
+  }
   var titleRevealed = false;
   function revealTitlesSequence() {
     if (titleRevealed) return;
@@ -1051,11 +1093,21 @@ if (problemScene) {
 #wl-success .wl-ok{color:#2A9D8F;font-size:17px;font-weight:600;margin:0 0 6px;}
 #wl-success .wl-ok-sub{color:rgba(255,255,255,.45);font-size:13px;margin:0;}
 #wl-error{display:none;color:#e74c3c;font-size:13px;margin-top:10px;}
+.wl-price-actions{display:flex;gap:12px;}
+.wl-price-btn{flex:1;padding:15px 0;}
 </style>
 
 <div id="waitlist-overlay" onclick="wlClose()">
   <div id="waitlist-box" onclick="event.stopPropagation()">
-    <div id="wl-form">
+    <div id="wl-price-step">
+      <h3>Quick question</h3>
+      <p class="wl-sub">Would you buy SHLUKU for around $20–$40?</p>
+      <div class="wl-price-actions">
+        <button class="cta-btn wl-price-btn" onclick="wlAnswerPrice('yes')">Yes</button>
+        <button class="cta-btn wl-price-btn" onclick="wlAnswerPrice('no')">No</button>
+      </div>
+    </div>
+    <div id="wl-form" style="display:none">
       <h3>Join the Early List</h3>
       <p class="wl-sub">Get a launch discount the day we ship.</p>
       <input type="email" id="wl-email" placeholder="your@email.com" />
@@ -1071,6 +1123,7 @@ if (problemScene) {
 
 <script>
 var wlMaxScroll=0;
+var wlPriceAnswer=null;
 var wlSessionId=sessionStorage.getItem('wlSessionId');
 if(!wlSessionId){wlSessionId=Math.random().toString(36).substr(2,9)+Date.now().toString(36);sessionStorage.setItem('wlSessionId',wlSessionId);}
 var countryByIp='Unknown';
@@ -1166,12 +1219,20 @@ function openWaitlistPopup(){
   var o=document.getElementById('waitlist-overlay');
   o.classList.add('wl-open');
   if(window.posthog)posthog.capture('waitlist_opened');
+  wlPriceAnswer=null;
+  document.getElementById('wl-price-step').style.display='block';
   document.getElementById('wl-email').value='';
   document.getElementById('wl-email').style.borderColor='';
-  document.getElementById('wl-form').style.display='block';
+  document.getElementById('wl-form').style.display='none';
   document.getElementById('wl-success').style.display='none';
   document.getElementById('wl-submit').disabled=false;
   document.getElementById('wl-submit').textContent='Submit';
+}
+function wlAnswerPrice(answer){
+  wlPriceAnswer=answer;
+  if(window.posthog)posthog.capture('price_question_answered',{answer:answer});
+  document.getElementById('wl-price-step').style.display='none';
+  document.getElementById('wl-form').style.display='block';
 }
 function wlClose(){
   document.getElementById('waitlist-overlay').classList.remove('wl-open');
@@ -1207,7 +1268,8 @@ function wlSubmit(){
     window.posthog.capture("waitlist_email_submitted", {
       source: "waitlist_form",
       path: window.location.pathname,
-      device_type: getDeviceType()
+      device_type: getDeviceType(),
+      price_answer: wlPriceAnswer
     });
   }
   wlSheetsRequest.then(function(){
