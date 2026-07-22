@@ -1124,6 +1124,7 @@ if (problemScene) {
 <script>
 var wlMaxScroll=0;
 var wlPriceAnswer=null;
+var PAGE_VERSION='mobile';
 var wlSessionId=sessionStorage.getItem('wlSessionId');
 if(!wlSessionId){wlSessionId=Math.random().toString(36).substr(2,9)+Date.now().toString(36);sessionStorage.setItem('wlSessionId',wlSessionId);}
 var countryByIp='Unknown';
@@ -1218,9 +1219,16 @@ window.addEventListener('beforeunload',wlSendVisitor);
 function openWaitlistPopup(){
   var o=document.getElementById('waitlist-overlay');
   o.classList.add('wl-open');
-  if(window.posthog)posthog.capture('waitlist_opened');
+  console.log('[SHLUKU] Save my spot clicked');
+  if(window.posthog){
+    posthog.capture('save_my_spot_clicked',{device_type:getDeviceType(),page_version:PAGE_VERSION});
+    console.log('[SHLUKU] PostHog event fired: save_my_spot_clicked', {device_type:getDeviceType(),page_version:PAGE_VERSION});
+  } else {
+    console.log('[SHLUKU] PostHog not available, save_my_spot_clicked NOT fired');
+  }
   wlPriceAnswer=null;
   document.getElementById('wl-price-step').style.display='block';
+  console.log('[SHLUKU] price question opened');
   document.getElementById('wl-email').value='';
   document.getElementById('wl-email').style.borderColor='';
   document.getElementById('wl-form').style.display='none';
@@ -1239,6 +1247,7 @@ function wlAnswerPrice(answer){
   }
   document.getElementById('wl-price-step').style.display='none';
   document.getElementById('wl-form').style.display='block';
+  console.log('[SHLUKU] email form opened');
 }
 function wlClose(){
   document.getElementById('waitlist-overlay').classList.remove('wl-open');
@@ -1255,6 +1264,7 @@ function wlSubmit(){
   var email=document.getElementById('wl-email').value.trim();
   var err=document.getElementById('wl-error');
   err.style.display='none';
+  console.log('[SHLUKU] email submitted');
   if(!email||!email.includes('@')){
     document.getElementById('wl-email').style.borderColor='#e74c3c';
     if(window.posthog)posthog.capture('email_submit_failed',{reason:'validation'});
@@ -1263,7 +1273,7 @@ function wlSubmit(){
   var btn=document.getElementById('wl-submit');
   btn.disabled=true;
   btn.textContent='Sending…';
-  console.log('[SHLUKU] email submitted, price_answer:', wlPriceAnswer);
+  console.log('[SHLUKU] price_answer included:', wlPriceAnswer);
   var body=new URLSearchParams({timestamp:new Date().toISOString(),device:wlGetDevice(),email:email,maxScroll:wlMaxScroll,type:'registered',sessionId:wlSessionId,country_by_ip:countryByIp,utm_source:utmSource});
   var wlSheetsRequest=fetch('https://script.google.com/macros/s/AKfycbyZeExBH-ghr25ipjNbtTIykEK1xgEMJVvnr3xWm3I6P0fNn6-7bi6z0MVxI1EAJqlnyA/exec',{
     method:'POST',
@@ -1272,15 +1282,16 @@ function wlSubmit(){
     body:body
   });
   if (window.posthog && typeof window.posthog.capture === "function") {
-    window.posthog.capture("waitlist_email_submitted", {
+    window.posthog.capture("waitlist_email_signup_completed", {
       source: "waitlist_form",
       path: window.location.pathname,
       device_type: getDeviceType(),
+      page_version: PAGE_VERSION,
       price_answer: wlPriceAnswer
     });
-    console.log('[SHLUKU] PostHog event fired: waitlist_email_submitted', {price_answer: wlPriceAnswer});
+    console.log('[SHLUKU] PostHog event fired: waitlist_email_signup_completed', {price_answer: wlPriceAnswer});
   } else {
-    console.log('[SHLUKU] PostHog not available, waitlist_email_submitted NOT fired');
+    console.log('[SHLUKU] PostHog not available, waitlist_email_signup_completed NOT fired');
   }
   wlSheetsRequest.then(function(){
     console.log('[SHLUKU] Google Sheets submission succeeded');
