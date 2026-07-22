@@ -1230,7 +1230,13 @@ function openWaitlistPopup(){
 }
 function wlAnswerPrice(answer){
   wlPriceAnswer=answer;
-  if(window.posthog)posthog.capture('price_question_answered',{answer:answer});
+  console.log('[SHLUKU] price answer selected:', answer);
+  if(window.posthog){
+    posthog.capture('price_question_answered',{answer:answer});
+    console.log('[SHLUKU] PostHog event fired: price_question_answered', {answer:answer});
+  } else {
+    console.log('[SHLUKU] PostHog not available, price_question_answered NOT fired');
+  }
   document.getElementById('wl-price-step').style.display='none';
   document.getElementById('wl-form').style.display='block';
 }
@@ -1257,6 +1263,7 @@ function wlSubmit(){
   var btn=document.getElementById('wl-submit');
   btn.disabled=true;
   btn.textContent='Sending…';
+  console.log('[SHLUKU] email submitted, price_answer:', wlPriceAnswer);
   var body=new URLSearchParams({timestamp:new Date().toISOString(),device:wlGetDevice(),email:email,maxScroll:wlMaxScroll,type:'registered',sessionId:wlSessionId,country_by_ip:countryByIp,utm_source:utmSource});
   var wlSheetsRequest=fetch('https://script.google.com/macros/s/AKfycbyZeExBH-ghr25ipjNbtTIykEK1xgEMJVvnr3xWm3I6P0fNn6-7bi6z0MVxI1EAJqlnyA/exec',{
     method:'POST',
@@ -1271,12 +1278,17 @@ function wlSubmit(){
       device_type: getDeviceType(),
       price_answer: wlPriceAnswer
     });
+    console.log('[SHLUKU] PostHog event fired: waitlist_email_submitted', {price_answer: wlPriceAnswer});
+  } else {
+    console.log('[SHLUKU] PostHog not available, waitlist_email_submitted NOT fired');
   }
   wlSheetsRequest.then(function(){
+    console.log('[SHLUKU] Google Sheets submission succeeded');
     document.getElementById('wl-form').style.display='none';
     document.getElementById('wl-success').style.display='block';
     setTimeout(wlClose,2500);
   }).catch(function(e){
+    console.log('[SHLUKU] Google Sheets submission failed', e);
     btn.disabled=false;
     btn.textContent='Submit';
     err.textContent='Something went wrong. Please try again.';
