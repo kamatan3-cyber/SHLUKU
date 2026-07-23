@@ -1125,21 +1125,6 @@ if (problemScene) {
 var wlMaxScroll=0;
 var wlPriceAnswer=null;
 var PAGE_VERSION='mobile';
-var wlSessionId=sessionStorage.getItem('wlSessionId');
-if(!wlSessionId){wlSessionId=Math.random().toString(36).substr(2,9)+Date.now().toString(36);sessionStorage.setItem('wlSessionId',wlSessionId);}
-var countryByIp='Unknown';
-async function getCountryByIp(){try{var r=await fetch('https://ipapi.co/json/');if(!r.ok)throw new Error();var d=await r.json();return d.country_name||d.country||'Unknown';}catch(e){return'Unknown';}}
-getCountryByIp().then(function(c){countryByIp=c||'Unknown';});
-var utmSource='Unknown';
-function getUtmSource(){try{var p=new URLSearchParams(window.location.search);return p.get('utm_source')||'Unknown';}catch(e){return'Unknown';}}
-utmSource=getUtmSource();
-
-function wlGetDevice(){
-  var ua=navigator.userAgent;
-  if(/tablet|ipad|playbook|silk/i.test(ua))return'Tablet';
-  if(/mobile|iphone|ipod|android|blackberry|mini|windows\s?phone|iemobile|opera m(ob|in)i/i.test(ua))return'Mobile';
-  return'Desktop';
-}
 
 var wlScrollMilestones=[20,40,60,80,100];
 var wlScrollFired={};
@@ -1159,23 +1144,11 @@ function wlUpdateScroll(){
 window.addEventListener('scroll',wlUpdateScroll,{passive:true});
 window.addEventListener('touchend',wlUpdateScroll,{passive:true});
 
-function wlSendVisitor(){
-  var params=new URLSearchParams({timestamp:new Date().toISOString(),device:wlGetDevice(),maxScroll:wlMaxScroll,type:'visitors',sessionId:wlSessionId,country_by_ip:countryByIp,utm_source:utmSource});
-  navigator.sendBeacon('https://script.google.com/macros/s/AKfycbzsPxPH_cy5Fzy5CU-zSbPvSsiy39UpZj_bDD-hZ-5nrlEsfCd_Pyttcrb7TFD1-KQwlA/exec',params);
-}
-
 var wlPosthogMoreDetailsEvents={page_2:'page2_more_details_clicked',page_3:'page3_more_details_clicked'};
 function wlSendMoreDetails(clickPage){
-  var params=new URLSearchParams({timestamp:new Date().toISOString(),device:wlGetDevice(),maxScroll:wlMaxScroll,type:'more_details',sessionId:wlSessionId,clickPage:clickPage,country_by_ip:countryByIp,utm_source:utmSource});
-  navigator.sendBeacon('https://script.google.com/macros/s/AKfycbzsPxPH_cy5Fzy5CU-zSbPvSsiy39UpZj_bDD-hZ-5nrlEsfCd_Pyttcrb7TFD1-KQwlA/exec',params);
   var wlPhEvent=wlPosthogMoreDetailsEvents[clickPage];
   if(wlPhEvent&&window.posthog)posthog.capture(wlPhEvent);
 }
-
-wlSendVisitor();
-setInterval(wlSendVisitor,5000);
-document.addEventListener('visibilitychange',function(){if(document.visibilityState==='hidden')wlSendVisitor();});
-window.addEventListener('beforeunload',wlSendVisitor);
 
 (function(){
   var wlTimeMilestones=[10,30,45,60,90,120,150,180,300];
@@ -1274,8 +1247,8 @@ function wlSubmit(){
   btn.disabled=true;
   btn.textContent='Sending…';
   console.log('[SHLUKU] price_answer included:', wlPriceAnswer);
-  var body=new URLSearchParams({timestamp:new Date().toISOString(),device:wlGetDevice(),email:email,price_answer:wlPriceAnswer,social_source:utmSource,maxScroll:wlMaxScroll,type:'registered',sessionId:wlSessionId,country_by_ip:countryByIp,utm_source:utmSource});
-  var wlSheetsRequest=fetch('https://script.google.com/macros/s/AKfycbzsPxPH_cy5Fzy5CU-zSbPvSsiy39UpZj_bDD-hZ-5nrlEsfCd_Pyttcrb7TFD1-KQwlA/exec',{
+  var body=new URLSearchParams({timestamp:new Date().toISOString(),email:email,answer:wlPriceAnswer||''});
+  var wlSheetsRequest=fetch('https://script.google.com/macros/s/AKfycbyyNikiVinO1XJtr4VU2tgpPIc0uqipu_wYA_sYTtgMBrq76KI-edKY39ZnF0_RKGw2Og/exec',{
     method:'POST',
     mode:'no-cors',
     headers:{'Content-Type':'application/x-www-form-urlencoded'},
