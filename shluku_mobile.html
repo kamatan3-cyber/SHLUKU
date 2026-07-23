@@ -1240,8 +1240,8 @@ function wlAnswerPrice(answer){
   wlPriceAnswer=answer;
   console.log('[SHLUKU] price answer selected:', answer);
   if(window.posthog){
-    posthog.capture('price_question_answered',{answer:answer});
-    console.log('[SHLUKU] PostHog event fired: price_question_answered', {answer:answer});
+    posthog.capture('price_question_answered',{answer:answer,device_type:getDeviceType(),page_version:PAGE_VERSION});
+    console.log('[SHLUKU] PostHog event fired: price_question_answered', {answer:answer,device_type:getDeviceType(),page_version:PAGE_VERSION});
   } else {
     console.log('[SHLUKU] PostHog not available, price_question_answered NOT fired');
   }
