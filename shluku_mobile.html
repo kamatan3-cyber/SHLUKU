@@ -10,6 +10,18 @@
     })
 </script>
 <script>
+function getPostHogAttribution(){
+  var params=new URLSearchParams(window.location.search);
+  return {
+    audience: params.get('audience') || 'unknown',
+    platform: params.get('platform') || 'unknown',
+    utm_campaign: params.get('utm_campaign') || 'unknown',
+    utm_message: params.get('utm_message') || 'unknown',
+    utm_creative: params.get('utm_creative') || 'unknown'
+  };
+}
+</script>
+<script>
 (function(){
   var wlJsErrorSeen={};
   window.addEventListener('error',function(e){
@@ -39,13 +51,13 @@
   var wlPageLoadTs=Date.now();
   var wlValidVisitTimer=setTimeout(function(){
     wlValidVisitDone=true;
-    if(window.posthog)posthog.capture('valid_visit');
+    if(window.posthog)posthog.capture('valid_visit',getPostHogAttribution());
   },5000);
   function wlHandleEarlyExit(){
     if(wlValidVisitDone||wlEarlyExitSent)return;
     wlEarlyExitSent=true;
     var durationSeconds=Math.round((Date.now()-wlPageLoadTs)/1000);
-    if(window.posthog)posthog.capture('early_exit',{duration_seconds:durationSeconds,visitor_type:'accidental'});
+    if(window.posthog)posthog.capture('early_exit',{duration_seconds:durationSeconds,visitor_type:'accidental',...getPostHogAttribution()});
   }
   window.addEventListener('pagehide',wlHandleEarlyExit);
   document.addEventListener('visibilitychange',function(){if(document.visibilityState==='hidden')wlHandleEarlyExit();});
@@ -1133,7 +1145,7 @@ function wlTrackScrollDepth(pct){
     var m=wlScrollMilestones[i];
     if(pct>=m&&!wlScrollFired[m]){
       wlScrollFired[m]=true;
-      if(window.posthog)posthog.capture('scroll_'+m);
+      if(window.posthog)posthog.capture('scroll_'+m,getPostHogAttribution());
     }
   }
 }
@@ -1147,7 +1159,7 @@ window.addEventListener('touchend',wlUpdateScroll,{passive:true});
 var wlPosthogMoreDetailsEvents={page_2:'page2_more_details_clicked',page_3:'page3_more_details_clicked'};
 function wlSendMoreDetails(clickPage){
   var wlPhEvent=wlPosthogMoreDetailsEvents[clickPage];
-  if(wlPhEvent&&window.posthog)posthog.capture(wlPhEvent);
+  if(wlPhEvent&&window.posthog)posthog.capture(wlPhEvent,getPostHogAttribution());
 }
 
 (function(){
@@ -1167,7 +1179,7 @@ function wlSendMoreDetails(clickPage){
       var s=wlTimeMilestones[i];
       if(wlActiveSeconds>=s&&!wlTimeFired[s]){
         wlTimeFired[s]=true;
-        if(window.posthog)posthog.capture('time_'+s+'_seconds');
+        if(window.posthog)posthog.capture('time_'+s+'_seconds',getPostHogAttribution());
       }
     }
     if(wlActiveSeconds>=300){
@@ -1194,7 +1206,7 @@ function openWaitlistPopup(){
   o.classList.add('wl-open');
   console.log('[SHLUKU] Save my spot clicked');
   if(window.posthog){
-    posthog.capture('save_my_spot_clicked',{device_type:getDeviceType(),page_version:PAGE_VERSION});
+    posthog.capture('save_my_spot_clicked',{device_type:getDeviceType(),page_version:PAGE_VERSION,...getPostHogAttribution()});
     console.log('[SHLUKU] PostHog event fired: save_my_spot_clicked', {device_type:getDeviceType(),page_version:PAGE_VERSION});
   } else {
     console.log('[SHLUKU] PostHog not available, save_my_spot_clicked NOT fired');
@@ -1213,7 +1225,7 @@ function wlAnswerPrice(answer){
   wlPriceAnswer=answer;
   console.log('[SHLUKU] price answer selected:', answer);
   if(window.posthog){
-    posthog.capture('price_question_answered',{answer:answer,device_type:getDeviceType(),page_version:PAGE_VERSION});
+    posthog.capture('price_question_answered',{answer:answer,device_type:getDeviceType(),page_version:PAGE_VERSION,...getPostHogAttribution()});
     console.log('[SHLUKU] PostHog event fired: price_question_answered', {answer:answer,device_type:getDeviceType(),page_version:PAGE_VERSION});
   } else {
     console.log('[SHLUKU] PostHog not available, price_question_answered NOT fired');
@@ -1240,7 +1252,7 @@ function wlSubmit(){
   console.log('[SHLUKU] email submitted');
   if(!email||!email.includes('@')){
     document.getElementById('wl-email').style.borderColor='#e74c3c';
-    if(window.posthog)posthog.capture('email_submit_failed',{reason:'validation'});
+    if(window.posthog)posthog.capture('email_submit_failed',{reason:'validation',...getPostHogAttribution()});
     return;
   }
   var btn=document.getElementById('wl-submit');
@@ -1260,7 +1272,8 @@ function wlSubmit(){
       path: window.location.pathname,
       device_type: getDeviceType(),
       page_version: PAGE_VERSION,
-      price_answer: wlPriceAnswer
+      price_answer: wlPriceAnswer,
+      ...getPostHogAttribution()
     });
     console.log('[SHLUKU] PostHog event fired: waitlist_email_signup_completed', {price_answer: wlPriceAnswer});
   } else {
@@ -1278,7 +1291,7 @@ function wlSubmit(){
     err.textContent='Something went wrong. Please try again.';
     err.style.display='block';
     var wlFailReason=(!navigator.onLine||(e&&e.name==='TypeError'))?'network':'unknown';
-    if(window.posthog)posthog.capture('email_submit_failed',{reason:wlFailReason});
+    if(window.posthog)posthog.capture('email_submit_failed',{reason:wlFailReason,...getPostHogAttribution()});
   });
 }
 </script>
