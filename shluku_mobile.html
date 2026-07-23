@@ -1161,13 +1161,13 @@ window.addEventListener('touchend',wlUpdateScroll,{passive:true});
 
 function wlSendVisitor(){
   var params=new URLSearchParams({timestamp:new Date().toISOString(),device:wlGetDevice(),maxScroll:wlMaxScroll,type:'visitors',sessionId:wlSessionId,country_by_ip:countryByIp,utm_source:utmSource});
-  navigator.sendBeacon('https://script.google.com/macros/s/AKfycbyZeExBH-ghr25ipjNbtTIykEK1xgEMJVvnr3xWm3I6P0fNn6-7bi6z0MVxI1EAJqlnyA/exec',params);
+  navigator.sendBeacon('https://script.google.com/macros/s/AKfycbzsPxPH_cy5Fzy5CU-zSbPvSsiy39UpZj_bDD-hZ-5nrlEsfCd_Pyttcrb7TFD1-KQwlA/exec',params);
 }
 
 var wlPosthogMoreDetailsEvents={page_2:'page2_more_details_clicked',page_3:'page3_more_details_clicked'};
 function wlSendMoreDetails(clickPage){
   var params=new URLSearchParams({timestamp:new Date().toISOString(),device:wlGetDevice(),maxScroll:wlMaxScroll,type:'more_details',sessionId:wlSessionId,clickPage:clickPage,country_by_ip:countryByIp,utm_source:utmSource});
-  navigator.sendBeacon('https://script.google.com/macros/s/AKfycbyZeExBH-ghr25ipjNbtTIykEK1xgEMJVvnr3xWm3I6P0fNn6-7bi6z0MVxI1EAJqlnyA/exec',params);
+  navigator.sendBeacon('https://script.google.com/macros/s/AKfycbzsPxPH_cy5Fzy5CU-zSbPvSsiy39UpZj_bDD-hZ-5nrlEsfCd_Pyttcrb7TFD1-KQwlA/exec',params);
   var wlPhEvent=wlPosthogMoreDetailsEvents[clickPage];
   if(wlPhEvent&&window.posthog)posthog.capture(wlPhEvent);
 }
@@ -1274,8 +1274,8 @@ function wlSubmit(){
   btn.disabled=true;
   btn.textContent='Sending…';
   console.log('[SHLUKU] price_answer included:', wlPriceAnswer);
-  var body=new URLSearchParams({timestamp:new Date().toISOString(),device:wlGetDevice(),email:email,maxScroll:wlMaxScroll,type:'registered',sessionId:wlSessionId,country_by_ip:countryByIp,utm_source:utmSource});
-  var wlSheetsRequest=fetch('https://script.google.com/macros/s/AKfycbyZeExBH-ghr25ipjNbtTIykEK1xgEMJVvnr3xWm3I6P0fNn6-7bi6z0MVxI1EAJqlnyA/exec',{
+  var body=new URLSearchParams({timestamp:new Date().toISOString(),device:wlGetDevice(),email:email,price_answer:wlPriceAnswer,social_source:utmSource,maxScroll:wlMaxScroll,type:'registered',sessionId:wlSessionId,country_by_ip:countryByIp,utm_source:utmSource});
+  var wlSheetsRequest=fetch('https://script.google.com/macros/s/AKfycbzsPxPH_cy5Fzy5CU-zSbPvSsiy39UpZj_bDD-hZ-5nrlEsfCd_Pyttcrb7TFD1-KQwlA/exec',{
     method:'POST',
     mode:'no-cors',
     headers:{'Content-Type':'application/x-www-form-urlencoded'},
